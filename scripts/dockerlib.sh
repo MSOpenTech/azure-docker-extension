@@ -30,15 +30,19 @@ is_supported_distro() {
     [[ $1 == "CoreOS" || $1 == "Ubuntu" ]]
 }
 
+get_distro() {
+    echo $(awk -F'=' '{if($1=="DISTRIB_ID")print $2; }' /etc/*-release)
+}
+
 validate_distro() {
-    distrib_id=$(awk -F'=' '{if($1=="DISTRIB_ID")print $2; }' /etc/*-release);
+    distrib_id=$(get_distro)
 
     if [ $distrib_id == "" ]; then
 	log "Error reading DISTRIB_ID"
 	exit 1
     fi
 
-    if is_supported_distro $distrib_id; then 
+    if is_supported_distro $distrib_id; then
 	log "OS $distrib_id is supported."
     else
 	log "OS $distrib_id is NOT supported."
