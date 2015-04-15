@@ -20,17 +20,35 @@ set -eu
 set -o pipefail
 IFS=$'\n\t'
 
+file_name=${0##*/}
+
+timestamp() {
+    date +"%Y-%m-%d %H:%M:%S"
+}
+
+log() {
+    echo "$file_name $(timestamp): $1"
+}
+
+supported_distro() {
+    [ $1 == "CoreOS" || $1 == "Ubuntu" ]
+}
+
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
 distrib_id=$(awk -F'=' '{if($1=="DISTRIB_ID")print $2; }' /etc/*-release);
+log "OS is $distrib_id"
+
+if [ $distrib_id == "CoreOS" ]; then
+    type python >/dev/null 2>&1 || { export PATH=$PATH:/usr/share/oem/python/bin/; }
+    type python >/dev/null 2>&1 || { echo >&2 "Python is required but it's not installed."; exit 1; }
+fi
 
 if [ $distrib_id == "" ]; then
     echo "Error reading DISTRIB_ID"
     exit 1
 elif [ $distrib_id == "Ubuntu" ]; then
-    echo "This is Ubuntu."
 elif [ $distrib_id == "CoreOS" ]; then
-    echo "This is CoreOS."
     type python >/dev/null 2>&1 || { export PATH=$PATH:/usr/share/oem/python/bin/; }
     type python >/dev/null 2>&1 || { echo >&2 "Python is required but it's not installed."; exit 1; }
 else
@@ -62,14 +80,7 @@ cat $SCRIPT_DIR/running.status.json | sed s/@@DATE@@/$(date -u +%FT%TZ)/ > $stat
 echo "Installing Docker..."
 
 if [ $distrib_id == "Ubuntu" ]; then
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update
-    apt-get install -y -q linux-image-extra-$(uname -r) apt-transport-https
-    echo deb https://get.docker.com/ubuntu docker main > /etc/apt/sources.list.d/docker.list
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
-    sleep 3
-    apt-get update
-    apt-get install -y -q lxc-docker
+    wget -qO- https://get.docker.com/ | sh
 elif [ $distrib_id == "CoreOS" ]; then
     echo "Copy /usr/lib/systemd/system/docker.service --> /etc/systemd/system/"
     cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
