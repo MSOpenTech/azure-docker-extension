@@ -16,9 +16,9 @@
 # limitations under the License.
 #--------------------------------------------------------------------------
 
-DISTRO=$(awk -F'=' '{if($1=="DISTRIB_ID")print $2; }' /etc/*-release)
+distro=$(awk -F'=' '{if($1=="DISTRIB_ID")print $2; }' /etc/*-release)
 
-if [ $DISTRO == "CoreOS" ]; then
+if [ $distro == "CoreOS" ]; then
     type python >/dev/null 2>&1 || { export PATH=$PATH:/usr/share/oem/python/bin/; }
     type python >/dev/null 2>&1 || { echo >&2 "Python is required but it's not installed."; exit 1; }
 fi
@@ -35,14 +35,31 @@ yaml_dump() {
     python -c 'import json,yaml,sys;data=json.load(sys.stdin);print yaml.safe_dump(data, default_flow_style=False)'
 }
 
-SCRIPT_DIR=$(cd $(dirname $0); pwd)
-LOG_DIR=$(cat $SCRIPT_DIR/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["logFolder"]')
-CONFIG_DIR=$(cat $SCRIPT_DIR/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["configFolder"]')
-STATUS_DIR=$(cat $SCRIPT_DIR/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["statusFolder"]')
+script_dir=$(cd $(dirname $0); pwd)
+docker_dir=/etc/docker
+log_dir=$(cat $script_dir/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["logFolder"]')
+config_dir=$(cat $script_dir/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["configFolder"]')
+status_dir=$(cat $script_dir/../HandlerEnvironment.json | json_val '[0]["handlerEnvironment"]["statusFolder"]')
 
-LOG_FILE=$LOG_DIR/docker-handler.log
-CONFIG_FILE=$(ls $CONFIG_DIR | grep -E ^[0-9]+.settings$ | sort -n | tail -n 1)
-STATUS_FILE=$(echo $CONFIG_FILE | sed s/settings/status/)
+log_file=$log_dir/docker-handler.log
+config_file=$(ls $config_dir | grep -E ^[0-9]+.settings$ | sort -n | tail -n 1)
+status_file=$(echo $config_file | sed s/settings/status/)
+
+config_path=$config_dir/$config_file
+status_path=$status_dir/$status_file
+
+install_only() {
+    local only_install="false"
+		
+    if [ -n "$(cat $config_path | json_val \
+        '["runtimeSettings"][0]["handlerSettings"]["publicSettings"]["installonly"]' \
+        2>/dev/null )" ]; then
+        only_install=$(cat $config_path | json_val \
+        '["runtimeSettings"][0]["handlerSettings"]["publicSettings"]["installonly"]')
+    fi
+
+    echo $only_install
+}
 
 log() {
     local file_name=${0##*/}
@@ -51,15 +68,42 @@ log() {
 }
 
 validate_distro() {
-    if [ $DISTRO == "" ]; then
-	log "Error reading DISTRO"
-	exit 1
+    if [ $distro == "" ]; then
+        log "Error reading DISTRO"
+        exit 1
     fi
 
-    if [[ $DISTRO == "CoreOS" || $DISTRO == "Ubuntu" ]]; then
-	log "OS $DISTRO is supported."
+    if [[ $distro == "CoreOS" || $distro == "Ubuntu" ]]; then
+        log "OS $distro is supported."
     else
-	log "OS $DISTRO is NOT supported."
-	exit 1;
+        log "OS $distro is NOT supported."
+        exit 1;
     fi
+}
+
+restart_docker() {
+    log "Restarting Docker"
+    if [ $distro == "Ubuntu" ]; then
+        service docker restart
+    elif [ $distro == "CoreOS" ]; then
+        systemctl restart docker
+    fi
+}
+
+stop_docker() {
+    log "Stopping docker service"
+    
+    if [ $distro == "Ubuntu" ]; then
+        service docker stop
+    elif [ $distro == "CoreOS" ]; then
+        systemctl stop docker
+    fi
+}
+
+signal_transitioning() {
+    cat $script_dir/running.status.json | sed s/@@DATE@@/$(date -u +%FT%TZ)/ > $status_path
+}
+
+signal_success() {
+    cat $script_dir/success.status.json | sed s/@@DATE@@/$(date -u +%FT%TZ)/ > $status_path
 }
