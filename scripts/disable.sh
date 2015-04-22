@@ -17,14 +17,9 @@
 #--------------------------------------------------------------------------
 
 set -e
-source ./dockerlib.sh
-exec >> $LOG_FILE 2>&1
+script_dir=$(cd $(dirname $0); pwd)
+source $script_dir/dockerlib.sh
+exec >> $log_file 2>&1
 
 validate_distro
-
-log "Stopping docker service"
-if [[ $DISTRO == "Ubuntu" ]]; then
-    service docker stop
-elif [[ $DISTRO == "CoreOS" ]]; then
-    systemctl stop docker
-fi
+stop_docker
