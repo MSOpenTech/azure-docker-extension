@@ -250,6 +250,10 @@ func composeUp(d driver.DistroDriver, json map[string]interface{}, env map[strin
 	defer os.Unsetenv("COMPOSE_HTTP_TIMEOUT")
 	defer os.Unsetenv("DOCKER_CLIENT_TIMEOUT")
 
+	// set docker-compose.yml path to share directory with docker-compose container.
+	os.Setenv("COMPOSE_FILE", ymlPath)
+	defer os.Unsetenv("COMPOSE_FILE")
+
 	// set protected environment variables to be used in docker-compose
 	for k, v := range env {
 		log.Printf("Setting protected environment variable '%s'.", k)
