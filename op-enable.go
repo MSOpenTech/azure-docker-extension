@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	composeUrl         = "https://github.com/docker/compose/releases/download/1.5.1/docker-compose-Linux-x86_64"
+	composeUrl         = "https://github.com/docker/compose/releases/download/1.6.2/docker-compose-Linux-x86_64"
 	composeBin         = "docker-compose"
 	composeTimeoutSecs = 600
 
