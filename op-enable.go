@@ -213,7 +213,6 @@ func loginRegistry(s dockerLoginSettings) error {
 	}
 	opts := []string{
 		"login",
-		"--email=" + s.Email,
 		"--username=" + s.Username,
 		"--password=" + s.Password,
 	}
