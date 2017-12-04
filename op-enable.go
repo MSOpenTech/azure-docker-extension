@@ -69,15 +69,20 @@ func enable(he vmextension.HandlerEnvironment, d driver.DistroDriver) error {
 		// extensions to fail.
 		//
 		// Adding this temporary retry logic just for Linux Diagnostics extension
-		// assuming it will take at most 5 minutes to be done with apt-get lock.
+		// assuming it will take at most 10 minutes to be done with apt-get lock.
 		//
 		// This retry logic should be removed once the issue is fixed on the resource
 		// provider layer.
 
-		var (
-			nRetries      = 6
-			retryInterval = time.Minute * 1
-		)
+		nRetries := settings.publicSettings.Installation.NumRetry
+		if nRetries == 0 {
+			nRetries = 10
+		}
+		retrySeconds := settings.publicSettings.Installation.RetryDelaySeconds
+		if retrySeconds == 0 {
+			retrySeconds = 60
+		}
+		retryInterval := time.Duration(retrySeconds) * time.Second
 
 		for nRetries > 0 {
 			if err := d.InstallDocker(dockerInstallCmd); err != nil {
