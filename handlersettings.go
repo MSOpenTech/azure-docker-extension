@@ -8,10 +8,16 @@ import (
 
 // publicSettings is the type deserialized from public configuration section.
 type publicSettings struct {
-	Docker      dockerEngineSettings   `json:"docker"`
-	ComposeJson map[string]interface{} `json:"compose"`
-	ComposeEnv  map[string]string      `json:"compose-environment"`
-	AzureEnv    string                 `json:"azure-environment"`
+	Installation installerSettings      `json:"installation,omitempty"`
+	Docker       dockerEngineSettings   `json:"docker"`
+	ComposeJson  map[string]interface{} `json:"compose"`
+	ComposeEnv   map[string]string      `json:"compose-environment"`
+	AzureEnv     string                 `json:"azure-environment"`
+}
+
+type installerSettings struct {
+	NumRetry          int `json:"num-retry,omitempty"`
+	RetryDelaySeconds int `json:"retry-delay-seconds,omitempty"`
 }
 
 // protectedSettings is the type decoded and deserialized from protected
