@@ -47,7 +47,7 @@ func enable(he vmextension.HandlerEnvironment, d driver.DistroDriver) error {
 	composeUrl := ""
 	switch settings.AzureEnv {
 		case "AzureChinaCloud":
-			dockerInstallCmd = "curl -sSL https://mirror.azure.cn/repo/install-docker-engine.sh | sh -s -- --mirror AzureChinaCloud"
+			dockerInstallCmd = "curl -sSL https://mirror.azure.cn/repo/install-docker-ce.sh | sh -s -- --mirror AzureChinaCloud"
 			composeUrl = composeUrlAzureChina
 		case "AzureCloud", "":
 			dockerInstallCmd = "curl -sSL https://get.docker.com/ | sh"
